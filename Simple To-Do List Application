@@ -1,0 +1,79 @@
+import sqlite3
+from datetime import datetime
+
+# Database setup
+conn = sqlite3.connect('todo.db')
+cursor = conn.cursor()
+cursor.execute('''CREATE TABLE IF NOT EXISTS tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    category TEXT,
+                    due_date TEXT,
+                    completed BOOLEAN NOT NULL CHECK (completed IN (0, 1))
+                )''')
+conn.commit()
+
+# Add a new task
+def add_task():
+    title = input("Enter task title: ")
+    category = input("Enter category (optional): ")
+    due_date = input("Enter due date (YYYY-MM-DD, optional): ")
+    try:
+        datetime.strptime(due_date, "%Y-%m-%d")
+    except ValueError:
+        due_date = None
+    cursor.execute("INSERT INTO tasks (title, category, due_date, completed) VALUES (?, ?, ?, 0)", 
+                   (title, category, due_date))
+    conn.commit()
+    print("Task added successfully!")
+
+# Mark a task as completed
+def complete_task():
+    task_id = input("Enter the ID of the task to mark as completed: ")
+    cursor.execute("UPDATE tasks SET completed = 1 WHERE id = ?", (task_id,))
+    conn.commit()
+    print("Task marked as completed!")
+
+# View all tasks
+def view_tasks():
+    cursor.execute("SELECT * FROM tasks ORDER BY due_date ASC")
+    tasks = cursor.fetchall()
+    for task in tasks:
+        status = "Completed" if task[4] else "Pending"
+        print(f"ID: {task[0]} | Title: {task[1]} | Category: {task[2]} | Due Date: {task[3]} | Status: {status}")
+
+# Delete a task
+def delete_task():
+    task_id = input("Enter the ID of the task to delete: ")
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    print("Task deleted successfully!")
+
+# Main application loop
+def main():
+    while True:
+        print("\nTo-Do List")
+        print("1. Add Task")
+        print("2. Complete Task")
+        print("3. View Tasks")
+        print("4. Delete Task")
+        print("5. Exit")
+
+        choice = input("Choose an option: ")
+        if choice == '1':
+            add_task()
+        elif choice == '2':
+            complete_task()
+        elif choice == '3':
+            view_tasks()
+        elif choice == '4':
+            delete_task()
+        elif choice == '5':
+            print("Exiting...")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main()
+    conn.close()
